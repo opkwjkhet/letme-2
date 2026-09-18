@@ -4,7 +4,7 @@ import Security
 
 @MainActor
 final class LicenseManager: ObservableObject {
-    static let accessKey = "OGIOS"
+    static let accessKey = "WINNER"
 
     @Published private(set) var expirationDate: Date?
     @Published private(set) var isActive = false
