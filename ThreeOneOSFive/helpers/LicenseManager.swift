@@ -21,7 +21,7 @@ final class LicenseManager: ObservableObject {
         isActive = hasRememberedKey
     }
 
-    // ถือว่ามีคีย์อะไรก็ได้ที่ไม่ว่าง
+
     var hasRememberedKey: Bool {
         !(string(for: keyAccount) ?? "").isEmpty
     }
@@ -45,7 +45,7 @@ final class LicenseManager: ObservableObject {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             self.isBusy = false
-            // พิมพ์อะไรก็ได้ผ่านหมด (ไม่เช็กกับ accessKey)
+            
             if self.rememberKey { self.save(trimmed, for: self.keyAccount) }
             self.isActive = true
             self.message = "Activated successfully"
