@@ -115,7 +115,7 @@ struct ContentView: View {
 
     private var profileHeader: some View {
         HStack(spacing: 12) {
-            Text("Y")
+            Text("N")
                 .font(.system(size: 28, weight: .medium, design: .serif))
                 .foregroundStyle(.white)
                 .frame(width: 48, height: 50)
@@ -123,7 +123,7 @@ struct ContentView: View {
                 .overlay(RoundedRectangle(cornerRadius: 9).stroke(MockPalette.border, lineWidth: 1))
 
             VStack(alignment: .leading, spacing: 3) {
-                Text("Sophia Cheat")
+                Text("Niger Cheat")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(.white)
                 Text("FFXC  /  PRIVATE EDITION")
@@ -158,7 +158,7 @@ struct ContentView: View {
     private var licenseCard: some View {
         VStack(spacing: 12) {
             HStack(alignment: .top) {
-                Text("YaPa-*****-KFL")
+                Text("Mona-*****-ics")
                     .font(.system(size: 16, weight: .semibold, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.9))
                 Spacer()
@@ -175,7 +175,7 @@ struct ContentView: View {
             HStack {
                 Image(systemName: "iphone")
                     .font(.system(size: 14, weight: .regular))
-                Text("iPhone 14 Pro Max")
+                Text("iPhone 18 Pro Max")
                     .font(.system(size: 13, weight: .medium))
                 Spacer()
                 Image(systemName: "apple.logo")
