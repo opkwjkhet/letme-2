@@ -2,6 +2,8 @@ import SwiftUI
 import UIKit
 import AVFoundation
 
+/// Visual-only recreation of the supplied reference screen.
+/// Controls update local demo state only; nothing here modifies or launches a game.
 struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var appState: AppState
@@ -18,24 +20,48 @@ struct ContentView: View {
     @State private var aimChestPackageEnabled = false
     @State private var magicEnabled = false
 
+    @State private var selectedTab = 0
+    @State private var selectedGame = 0
+
+    @State private var aimSilent = true
+    @State private var aimBot = false
+    @State private var aimLine = true
+    @State private var boxESP = true
+    @State private var boneESP = true
+    @State private var espCount = true
+    @State private var weaponESP = false
+    @State private var espColor = true
+    @State private var fastMedikit = true
+    @State private var fastFire = true
+
+    @State private var silentFOV = 100.0
+    @State private var headshot = 73.0
+    @State private var lineThickness = 1.0
+    @State private var fireLevel = 4
+    @State private var selectedColor = "White"
+    @State private var showDemoAlert = false
+
     var body: some View {
         ZStack {
-            AnimatedHyperBackdrop()
-                .ignoresSafeArea()
+            MockBackdrop()
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 18) {
-                    brandHeader
-                    devicePanel
-                    patchOptions
-                    gameLaunchPanel
-                    footerStatus
-                    developerCredits
+                VStack(spacing: 17) {
+                    menuTabs
+                    profileHeader
+                    licenseCard
+                    gamePicker
+                    aimingSection
+                    espSection
+                    combatSection
                 }
-                .padding(.horizontal, 18)
-                .padding(.top, 18)
-                .padding(.bottom, 28)
+                .padding(.horizontal, 22)
+                .padding(.top, 8)
+                .padding(.bottom, 22)
             }
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            bottomBar
         }
         .preferredColorScheme(.dark)
         .sheet(isPresented: $showSettings) {
@@ -53,224 +79,414 @@ struct ContentView: View {
             syncPatchStates()
             patchMessage = "READY — SELECT A PATCH"
         }
+        .alert("Demo UI only", isPresented: $showDemoAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("This is a visual mockup. It does not modify, inject into, or interact with Free Fire.")
+        }
     }
 
-    private var brandHeader: some View {
-        HStack(spacing: 14) {
+    private var menuTabs: some View {
+        HStack(spacing: 0) {
+            tabButton("Menu", index: 0)
+            tabButton("Log", index: 1)
+        }
+        .padding(3)
+        .frame(height: 36)
+        .background(MockPalette.tabTrack, in: RoundedRectangle(cornerRadius: 9))
+    }
+
+    private func tabButton(_ title: String, index: Int) -> some View {
+        Button {
+            selectedTab = index
+        } label: {
+            Text(title)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(.white.opacity(selectedTab == index ? 0.96 : 0.78))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background {
+                    if selectedTab == index {
+                        RoundedRectangle(cornerRadius: 7).fill(MockPalette.selectedTab)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var profileHeader: some View {
+        HStack(spacing: 12) {
+            Text("Y")
+                .font(.system(size: 28, weight: .medium, design: .serif))
+                .foregroundStyle(.white)
+                .frame(width: 48, height: 50)
+                .background(.black.opacity(0.72), in: RoundedRectangle(cornerRadius: 9))
+                .overlay(RoundedRectangle(cornerRadius: 9).stroke(MockPalette.border, lineWidth: 1))
+
             VStack(alignment: .leading, spacing: 3) {
-                Text("EXTERNAL")
-                    .font(.system(size: 25, weight: .black, design: .rounded))
-                    .tracking(3)
+                Text("Sophia Cheat")
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(.white)
-                Text("CHEAT CONTROL")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .tracking(1.7)
-                    .foregroundStyle(AppTheme.accent)
+                Text("FFXC  /  PRIVATE EDITION")
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .tracking(1.1)
+                    .foregroundStyle(.white.opacity(0.62))
+                HStack(spacing: 6) {
+                    Circle().fill(Color(red: 0.72, green: 0.86, blue: 0.73)).frame(width: 7, height: 7)
+                    Text("Free Fire")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.66))
+                }
+                .padding(.top, 5)
             }
 
-            Spacer()
+            Spacer(minLength: 4)
 
             Button {
                 showSettings = true
             } label: {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(AppTheme.accent)
+                Image(systemName: "rectangle.portrait.and.arrow.right")
+                    .font(.system(size: 19, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.78))
                     .frame(width: 48, height: 48)
-                    .background(Color.black.opacity(0.38), in: Circle())
-                    .overlay(Circle().stroke(AppTheme.accent.opacity(0.42), lineWidth: 1))
+                    .background(MockPalette.card, in: RoundedRectangle(cornerRadius: 10))
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Open settings")
         }
+        .padding(.top, 2)
     }
 
-    private var devicePanel: some View {
-        VStack(spacing: 0) {
-            panelTitle("DEVICE STATUS", icon: "shield.lefthalf.filled")
-            statusRow(icon: "apple.logo", title: "iOS", value: AppInfo.osVersion, color: AppTheme.secondaryAccent)
-            statusRow(icon: "iphone", title: "Device", value: AppInfo.displayMachineName, color: AppTheme.secondaryAccent)
-            statusRow(icon: "checkmark.seal.fill", title: "Support", value: appState.isSupported ? "SUPPORTED" : "UNSUPPORTED", color: appState.isSupported ? .green : .red)
-        }
-        .padding(16)
-        .background(Color.black.opacity(0.42), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 24, style: .continuous).stroke(AppTheme.accent.opacity(0.38), lineWidth: 1))
-    }
+    private var licenseCard: some View {
+        VStack(spacing: 12) {
+            HStack(alignment: .top) {
+                Text("YaPa-*****-KFL")
+                    .font(.system(size: 16, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.9))
+                Spacer()
+                VStack(alignment: .trailing, spacing: 3) {
+                    Text("Expires In")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.46))
+                    Text("365d  3h  50m")
+                        .font(.system(size: 15, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.white.opacity(0.9))
+                }
+            }
 
-    private var patchOptions: some View {
-        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                panelTitle("PATCH OPTIONS", icon: "bolt.fill")
+                Image(systemName: "iphone")
+                    .font(.system(size: 14, weight: .regular))
+                Text("iPhone 14 Pro Max")
+                    .font(.system(size: 13, weight: .medium))
                 Spacer()
-                Text("SELECT TO ENABLE")
-                    .font(.system(size: 9, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.45))
+                Image(systemName: "apple.logo")
+                    .font(.system(size: 13, weight: .semibold))
+                Text("26.5")
+                    .font(.system(size: 13, weight: .medium, design: .monospaced))
             }
+            .foregroundStyle(.white.opacity(0.57))
+        }
+        .padding(.horizontal, 15)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity)
+        .background(MockPalette.card, in: RoundedRectangle(cornerRadius: 13))
+        .overlay(RoundedRectangle(cornerRadius: 13).stroke(MockPalette.border, lineWidth: 1))
+    }
 
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-                patchCard(name: "Aim Drag", target: "FREE FIRE • NORMAL", package: "OGIOS File (6).3105", color: AppTheme.accent, state: $aimDragEnabled)
-                patchCard(name: "Aim Neck", target: "FREE FIRE • NORMAL", package: "OGIOS File (7).3105", color: AppTheme.secondaryAccent, state: $aimNeckEnabled)
-                patchCard(name: "Antenna", target: "FREE FIRE • NORMAL", package: "OGIOS File (8).3105", color: AppTheme.secondaryAccent, state: $hspeitoffEnabled)
-                patchCard(name: "144 FPS", target: "FREE FIRE • NORMAL", package: "OGIOS File (10).3105", color: AppTheme.secondaryAccent, state: $hyperBalamagicaEnabled)
-                patchCard(name: "Aim Body", target: "FREE FIRE • NORMAL", package: "OGIOS File (12).3105", color: AppTheme.accent, state: $aimBodyPackageEnabled)
-                patchCard(name: "Aim Chest", target: "FREE FIRE • NORMAL", package: "OGIOS File (2).3105", color: AppTheme.secondaryAccent, state: $aimChestPackageEnabled)
-                patchCard(name: "Magic", target: "FREE FIRE • NORMAL", package: "OGIOS File (14).3105", color: AppTheme.accent, state: $magicEnabled)
-            }
+    private var gamePicker: some View {
+        HStack(spacing: 4) {
+            gameButton("Free Fire", index: 0)
+            gameButton("Free Fire MAX", index: 1)
+        }
+        .padding(4)
+        .frame(height: 62)
+        .background(MockPalette.card, in: RoundedRectangle(cornerRadius: 13))
+        .overlay(RoundedRectangle(cornerRadius: 13).stroke(MockPalette.border, lineWidth: 1))
+    }
 
-            HStack(spacing: 8) {
-                Circle().fill(patchMessage.localizedCaseInsensitiveContains("successful") ? .green : AppTheme.accent).frame(width: 7, height: 7)
-                Text(patchOperationBusy ? "PROCESSING PATCH…" : patchMessage)
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.72))
-                    .lineLimit(2)
-                Spacer()
+    private func gameButton(_ title: String, index: Int) -> some View {
+        Button {
+            selectedGame = index
+        } label: {
+            Text(title)
+                .font(.system(size: 15, weight: selectedGame == index ? .bold : .medium))
+                .foregroundStyle(selectedGame == index ? MockPalette.ink : .white.opacity(0.7))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background {
+                    if selectedGame == index {
+                        RoundedRectangle(cornerRadius: 9).fill(MockPalette.cream)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var aimingSection: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            sectionLabel("AIMING")
+            VStack(spacing: 0) {
+                FeatureToggleRow(
+                    symbol: "wind",
+                    title: "Aim Silent",
+                    subtitle: "Silent aim with headshot rate and FOV",
+                    isOn: $aimSilent
+                )
+
+                Divider().overlay(MockPalette.divider)
+                    .padding(.leading, 64)
+
+                DemoSliderRow(title: "Silent FOV", value: $silentFOV, range: 0...100, suffix: "")
+
+                Divider().overlay(MockPalette.divider)
+                    .padding(.leading, 64)
+
+                DemoSliderRow(title: "Headshot", value: $headshot, range: 0...100, suffix: "%")
+
+                Divider().overlay(MockPalette.divider)
+                    .padding(.leading, 64)
+
+                FeatureToggleRow(
+                    symbol: "scope",
+                    title: "Aim Bot",
+                    subtitle: "Head or neck aim with FOV mode",
+                    isOn: $aimBot
+                )
+
+                Divider().overlay(MockPalette.divider)
+                    .padding(.leading, 64)
+
+                FeatureToggleRow(
+                    symbol: "line.diagonal",
+                    title: "Aim Line",
+                    subtitle: "Line from crosshair to selected target",
+                    isOn: $aimLine
+                )
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(Color.black.opacity(0.34), in: Capsule())
+            .background(MockPalette.card, in: RoundedRectangle(cornerRadius: 15))
+            .overlay(RoundedRectangle(cornerRadius: 15).stroke(MockPalette.border, lineWidth: 1))
         }
     }
 
-    private func patchCard(name: String, target: String, package: String, color: Color, state: Binding<Bool>) -> some View {
-        PatchOptionCard(name: name, target: target, color: color, isEnabled: state, isBusy: patchOperationBusy) {
-            togglePatch(packageFilename: package, state: state)
+    private var espSection: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            sectionLabel("ESP")
+            VStack(spacing: 0) {
+                FeatureToggleRow(
+                    symbol: "viewfinder.dashed",
+                    title: "Box ESP",
+                    subtitle: "Enemy bounding box",
+                    isOn: $boxESP
+                )
+
+                Divider().overlay(MockPalette.divider)
+                    .padding(.leading, 64)
+
+                FeatureToggleRow(
+                    symbol: "point.3.connected.trianglepath.dotted",
+                    title: "Bone ESP",
+                    subtitle: "Bone-line overlay",
+                    isOn: $boneESP
+                )
+
+                Divider().overlay(MockPalette.divider)
+                    .padding(.leading, 64)
+
+                FeatureToggleRow(
+                    symbol: "number",
+                    title: "ESP Count",
+                    subtitle: "Visible player count",
+                    isOn: $espCount
+                )
+
+                Divider().overlay(MockPalette.divider)
+                    .padding(.leading, 64)
+
+                FeatureToggleRow(
+                    symbol: "scope",
+                    title: "Weapon ESP",
+                    subtitle: "Weapon name above enemy box",
+                    isOn: $weaponESP
+                )
+
+                Divider().overlay(MockPalette.divider)
+                    .padding(.leading, 64)
+
+                FeatureToggleRow(
+                    symbol: "paintpalette",
+                    title: "ESP Color",
+                    subtitle: "Select ESP overlay color",
+                    isOn: $espColor
+                )
+
+                Divider().overlay(MockPalette.divider)
+                    .padding(.leading, 64)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("ESP Color")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.7))
+                        Spacer()
+                        Circle().fill(.white).frame(width: 14, height: 14)
+                        Text(selectedColor)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+
+                    Picker("ESP Color", selection: $selectedColor) {
+                        Text("White").tag("White")
+                        Text("Red").tag("Red")
+                        Text("Green").tag("Green")
+                    }
+                    .pickerStyle(.menu)
+                    .tint(.white.opacity(0.82))
+                    .labelsHidden()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    HStack(spacing: 9) {
+                        Text("Line (thickness) px")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.66))
+                            .fixedSize()
+                        Slider(value: $lineThickness, in: 0...1)
+                            .tint(MockPalette.cream)
+                    }
+                }
+                .padding(.horizontal, 15)
+                .padding(.vertical, 14)
+            }
+            .background(MockPalette.card, in: RoundedRectangle(cornerRadius: 15))
+            .overlay(RoundedRectangle(cornerRadius: 15).stroke(MockPalette.border, lineWidth: 1))
         }
     }
 
-    private var gameLaunchPanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            panelTitle("LAUNCH GAME", icon: "arrow.up.forward.app.fill")
-            HStack(spacing: 12) {
-                launchButton(title: "FF NORMAL", subtitle: "Free Fire Normal", color: AppTheme.accent, scheme: "freefireth")
-                lockedLaunchButton(title: "FF MAX", subtitle: "Locked • Coming Soon", color: AppTheme.secondaryAccent)
+    private var combatSection: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            sectionLabel("COMBAT")
+            VStack(spacing: 0) {
+                FeatureToggleRow(
+                    symbol: "cross.case",
+                    title: "Fast Medikit",
+                    subtitle: "Reduce medikit use time",
+                    isOn: $fastMedikit
+                )
+
+                Divider().overlay(MockPalette.divider)
+                    .padding(.leading, 64)
+
+                FeatureToggleRow(
+                    symbol: "bolt.fill",
+                    title: "Fast Fire",
+                    subtitle: "Increase fire rate",
+                    isOn: $fastFire
+                )
+
+                Divider().overlay(MockPalette.divider)
+                    .padding(.leading, 15)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Fast Fire")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.68))
+
+                    HStack(spacing: 1) {
+                        ForEach(1...4, id: \.self) { level in
+                            Button {
+                                fireLevel = level
+                            } label: {
+                                Text("Lv\(level)")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(.white.opacity(fireLevel == level ? 0.94 : 0.75))
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 34)
+                                    .background {
+                                        if fireLevel == level {
+                                            RoundedRectangle(cornerRadius: 7).fill(MockPalette.selectedTab)
+                                        }
+                                    }
+                            }
+                            .buttonStyle(.plain)
+                            if level < 4 {
+                                Rectangle().fill(MockPalette.divider).frame(width: 1, height: 22)
+                            }
+                        }
+                    }
+                    .padding(3)
+                    .background(MockPalette.tabTrack, in: RoundedRectangle(cornerRadius: 9))
+                }
+                .padding(.horizontal, 15)
+                .padding(.vertical, 13)
             }
+            .background(MockPalette.card, in: RoundedRectangle(cornerRadius: 15))
+            .overlay(RoundedRectangle(cornerRadius: 15).stroke(MockPalette.border, lineWidth: 1))
+        }
+    }
+
+    private var bottomBar: some View {
+        HStack(spacing: 12) {
             Button {
-                showCleaner = true
+                showDemoAlert = true
             } label: {
-                Label("Clean Cache & Temp", systemImage: "trash.slash.fill")
-                    .font(.system(size: 13, weight: .black, design: .rounded))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity, minHeight: 52)
-                    .background(Color.black.opacity(0.40), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(AppTheme.accent.opacity(0.52), lineWidth: 1))
+                Label {
+                    Text("Inject Cheat")
+                        .font(.system(size: 17, weight: .bold))
+                } icon: {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .font(.system(size: 18, weight: .bold))
+                }
+                .foregroundStyle(MockPalette.ink)
+                .frame(maxWidth: .infinity)
+                .frame(height: 60)
+                .background(MockPalette.cream, in: RoundedRectangle(cornerRadius: 11))
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Open cache and temporary files cleaner")
-        }
-    }
 
-    private func launchButton(title: String, subtitle: String, color: Color, scheme: String) -> some View {
-        Button { openGame(scheme: scheme) } label: {
-            VStack(alignment: .leading, spacing: 7) {
-                Image(systemName: "arrow.up.right.square.fill")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(color)
-                Text(title)
-                    .font(.system(size: 13, weight: .black, design: .rounded))
-                    .foregroundStyle(.white)
-                Text(subtitle)
-                    .font(.system(size: 10, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.5))
+            Button(action: resetDemoControls) {
+                Image(systemName: "arrow.counterclockwise")
+                    .font(.system(size: 23, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.75))
+                    .frame(width: 60, height: 60)
+                    .background(MockPalette.card, in: RoundedRectangle(cornerRadius: 11))
             }
-            .frame(maxWidth: .infinity, minHeight: 82, alignment: .leading)
-            .padding(.horizontal, 14)
-            .background(Color.black.opacity(0.40), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(color.opacity(0.38), lineWidth: 1))
+            .buttonStyle(.plain)
+            .accessibilityLabel("Reset demo controls")
         }
-        .buttonStyle(.plain)
-    }
-
-    private func lockedLaunchButton(title: String, subtitle: String, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 7) {
-            Image(systemName: "lock.fill")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(color.opacity(0.72))
-            Text(title)
-                .font(.system(size: 13, weight: .black, design: .rounded))
-                .foregroundStyle(.white.opacity(0.72))
-            Text(subtitle)
-                .font(.system(size: 10, weight: .bold, design: .rounded))
-                .foregroundStyle(color.opacity(0.72))
-        }
-        .frame(maxWidth: .infinity, minHeight: 82, alignment: .leading)
-        .padding(.horizontal, 14)
-        .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(color.opacity(0.24), lineWidth: 1))
-        .opacity(0.72)
-        .accessibilityLabel("FF MAX locked, coming soon")
-    }
-
-    private var footerStatus: some View {
-        HStack(spacing: 10) {
-            Circle().fill(.green).frame(width: 9, height: 9).shadow(color: .green, radius: 6)
-            Text("SISTEMA PRONTO")
-                .font(.system(size: 10, weight: .black, design: .rounded))
-                .tracking(1.2)
-                .foregroundStyle(.white.opacity(0.72))
-            Spacer()
-            Text("xufan • PRONTO")
-                .font(.system(size: 9, weight: .bold, design: .rounded))
-                .foregroundStyle(AppTheme.accent.opacity(0.8))
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 13)
-        .background(Color.black.opacity(0.45), in: Capsule())
-        .overlay(Capsule().stroke(AppTheme.accent.opacity(0.2), lineWidth: 1))
-    }
-
-    private var developerCredits: some View {
-        VStack(spacing: 10) {
-            Text("Developed by xufan")
-                .font(.system(size: 11, weight: .bold, design: .rounded))
-                .foregroundStyle(.white.opacity(0.72))
-                .multilineTextAlignment(.center)
-
-            Text("Our Telegram channels")
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
-                .foregroundStyle(AppTheme.secondaryAccent.opacity(0.85))
-
-            HStack(spacing: 10) {
-                channelButton(title: "xufan", url: "https://t.me/fan13y")
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 4)
+        .padding(.horizontal, 22)
+        .padding(.top, 11)
         .padding(.bottom, 8)
-    }
-
-    private func channelButton(title: String, url: String) -> some View {
-        Button {
-            guard let destination = URL(string: url) else { return }
-            UIApplication.shared.open(destination)
-        } label: {
-            Label(title, systemImage: "paperplane.fill")
-                .font(.system(size: 10, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 9)
-                .background(AppTheme.accent.opacity(0.18), in: Capsule())
-                .overlay(Capsule().stroke(AppTheme.accent.opacity(0.42), lineWidth: 1))
+        .background(.ultraThinMaterial)
+        .overlay(alignment: .top) {
+            Rectangle().fill(.white.opacity(0.08)).frame(height: 1)
         }
-        .buttonStyle(.plain)
     }
 
-    private func panelTitle(_ title: String, icon: String) -> some View {
-        Label(title, systemImage: icon)
-            .font(.system(size: 12, weight: .black, design: .rounded))
-            .tracking(1.4)
-            .foregroundStyle(AppTheme.accent)
+    private func sectionLabel(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(.white.opacity(0.45))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 4)
     }
 
-    private func statusRow(icon: String, title: String, value: String, color: Color) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon).font(.system(size: 17, weight: .bold)).foregroundStyle(color).frame(width: 24)
-            Text(title).font(.system(size: 14, weight: .semibold, design: .rounded)).foregroundStyle(.white.opacity(0.58))
-            Spacer()
-            Text(value).font(.system(size: 14, weight: .black, design: .rounded)).foregroundStyle(.white)
-        }
-        .padding(.top, 14)
+    private func resetDemoControls() {
+        aimSilent = true
+        aimBot = false
+        aimLine = true
+        boxESP = true
+        boneESP = true
+        espCount = true
+        weaponESP = false
+        espColor = true
+        fastMedikit = true
+        fastFire = true
+        silentFOV = 100
+        headshot = 73
+        lineThickness = 1
+        fireLevel = 4
+        selectedColor = "White"
     }
 
+    // Keep the original package-patching flow intact; the screenshot controls above
+    // are visual placeholders and intentionally do not trigger these operations.
     private func syncPatchStates() {
         aimDragEnabled = isPatchActive("OGIOS File (6).3105")
         aimNeckEnabled = isPatchActive("OGIOS File (7).3105")
@@ -282,8 +498,10 @@ struct ContentView: View {
     }
 
     private func isPatchActive(_ packageFilename: String) -> Bool {
-        patchStore.items.first(where: { $0.packageURL.lastPathComponent.caseInsensitiveCompare(packageFilename) == .orderedSame })
-            .flatMap { DevicePatchService.latestReceipt(projectID: $0.id) } != nil
+        patchStore.items.first(where: {
+            $0.packageURL.lastPathComponent.caseInsensitiveCompare(packageFilename) == .orderedSame
+        })
+        .flatMap { DevicePatchService.latestReceipt(projectID: $0.id) } != nil
     }
 
     private enum PatchActionResult {
@@ -307,7 +525,9 @@ struct ContentView: View {
 
     private func togglePatch(packageFilename: String, state: Binding<Bool>) {
         guard !patchOperationBusy else { return }
-        guard let item = patchStore.items.first(where: { $0.packageURL.lastPathComponent.caseInsensitiveCompare(packageFilename) == .orderedSame }) else {
+        guard let item = patchStore.items.first(where: {
+            $0.packageURL.lastPathComponent.caseInsensitiveCompare(packageFilename) == .orderedSame
+        }) else {
             patchMessage = "ERROR — PACKAGE NOT FOUND"
             log("patch: package not found: \(packageFilename)")
             return
@@ -324,7 +544,6 @@ struct ContentView: View {
             do {
                 if wasEnabled {
                     guard let receipt = DevicePatchService.latestReceipt(projectID: projectID) else {
-                        result = .unavailable("NO ACTIVE RECEIPT — NOTHING TO RESTORE")
                         DispatchQueue.main.async {
                             self.setPatchState(for: packageFilename, enabled: false)
                             self.patchMessage = "OFF — NO ACTIVE PATCH FOUND"
@@ -336,7 +555,6 @@ struct ContentView: View {
                     result = .restored
                 } else {
                     guard let project else {
-                        result = .unavailable("PASSWORD REQUIRED — UNLOCK PACKAGE")
                         DispatchQueue.main.async {
                             self.patchStore.requestUnlock(for: item)
                             self.patchMessage = "PASSWORD REQUIRED — ENTER PACKAGE PASSWORD"
@@ -377,6 +595,101 @@ struct ContentView: View {
     }
 }
 
+private struct FeatureToggleRow: View {
+    let symbol: String
+    let title: String
+    let subtitle: String
+    @Binding var isOn: Bool
+
+    var body: some View {
+        HStack(spacing: 13) {
+            Image(systemName: symbol)
+                .font(.system(size: 20, weight: .medium))
+                .foregroundStyle(isOn ? MockPalette.ink : .white.opacity(0.75))
+                .frame(width: 50, height: 50)
+                .background(isOn ? MockPalette.cream : MockPalette.iconOff, in: RoundedRectangle(cornerRadius: 9))
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.94))
+                Text(subtitle)
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(.white.opacity(0.56))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+
+            Spacer(minLength: 2)
+
+            Toggle(title, isOn: $isOn)
+                .labelsHidden()
+                .tint(MockPalette.cream)
+                .scaleEffect(0.88, anchor: .trailing)
+                .frame(width: 54)
+        }
+        .padding(.horizontal, 13)
+        .padding(.vertical, 14)
+        .contentShape(Rectangle())
+    }
+}
+
+private struct DemoSliderRow: View {
+    let title: String
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+    let suffix: String
+
+    var body: some View {
+        VStack(spacing: 9) {
+            HStack {
+                Text(title)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.68))
+                Spacer()
+                Text("\(Int(value))\(suffix)")
+                    .font(.system(size: 14, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.86))
+            }
+            Slider(value: $value, in: range)
+                .tint(MockPalette.cream)
+        }
+        .padding(.horizontal, 17)
+        .padding(.vertical, 12)
+    }
+}
+
+private struct MockBackdrop: View {
+    var body: some View {
+        ZStack {
+            Color.black
+            GeometryReader { proxy in
+                Canvas { context, size in
+                    var path = Path()
+                    path.move(to: CGPoint(x: size.width * 0.68, y: 0))
+                    path.addLine(to: CGPoint(x: size.width * 0.28, y: size.height))
+                    path.move(to: CGPoint(x: size.width * 0.98, y: 0))
+                    path.addLine(to: CGPoint(x: size.width * 0.58, y: size.height))
+                    context.stroke(path, with: .color(.white.opacity(0.025)), lineWidth: 1)
+                }
+                .frame(width: proxy.size.width, height: proxy.size.height)
+            }
+        }
+        .ignoresSafeArea()
+    }
+}
+
+private enum MockPalette {
+    static let cream = Color(red: 0.93, green: 0.92, blue: 0.86)
+    static let ink = Color(red: 0.08, green: 0.08, blue: 0.08)
+    static let card = Color(red: 0.065, green: 0.065, blue: 0.07)
+    static let border = Color(red: 0.20, green: 0.20, blue: 0.21)
+    static let divider = Color(red: 0.14, green: 0.14, blue: 0.15)
+    static let iconOff = Color(red: 0.12, green: 0.12, blue: 0.13)
+    static let tabTrack = Color(red: 0.105, green: 0.105, blue: 0.115)
+    static let selectedTab = Color(red: 0.30, green: 0.30, blue: 0.32)
+}
+
 private struct PatchOptionCard: View {
     let name: String
     let target: String
@@ -389,7 +702,9 @@ private struct PatchOptionCard: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 11) {
                 HStack {
-                    Image(systemName: "bolt.fill").font(.system(size: 16, weight: .black)).foregroundStyle(color)
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 16, weight: .black))
+                        .foregroundStyle(color)
                     Spacer()
                     Text(isEnabled ? "ON" : "OFF")
                         .font(.system(size: 11, weight: .black, design: .rounded))
@@ -425,10 +740,11 @@ private struct PatchOptionCard: View {
     }
 }
 
-private enum PatchAudioFeedback {
+private struct PatchAudioFeedback {
     private static let synthesizer = AVSpeechSynthesizer()
     static func bypassActivated() { speak("Bypass ativado") }
     static func originalRestored() { speak("Bypass desativado") }
+
     private static func speak(_ message: String) {
         let session = AVAudioSession.sharedInstance()
         try? session.setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
@@ -493,6 +809,7 @@ private struct PatchUnlockPrompt: View {
 
 struct AnimatedHyperBackdrop: View {
     @State private var animate = false
+
     var body: some View {
         GeometryReader { proxy in
             ZStack {
@@ -510,7 +827,9 @@ struct AnimatedHyperBackdrop: View {
                 GridOverlay()
             }
             .onAppear {
-                withAnimation(.easeInOut(duration: 7).repeatForever(autoreverses: true)) { animate = true }
+                withAnimation(.easeInOut(duration: 7).repeatForever(autoreverses: true)) {
+                    animate = true
+                }
             }
         }
     }
@@ -522,10 +841,12 @@ private struct GridOverlay: View {
             var path = Path()
             let spacing: CGFloat = 44
             stride(from: CGFloat(0), through: size.width, by: spacing).forEach { x in
-                path.move(to: CGPoint(x: x, y: 0)); path.addLine(to: CGPoint(x: x, y: size.height))
+                path.move(to: CGPoint(x: x, y: 0))
+                path.addLine(to: CGPoint(x: x, y: size.height))
             }
             stride(from: CGFloat(0), through: size.height, by: spacing).forEach { y in
-                path.move(to: CGPoint(x: 0, y: y)); path.addLine(to: CGPoint(x: size.width, y: y))
+                path.move(to: CGPoint(x: 0, y: y))
+                path.addLine(to: CGPoint(x: size.width, y: y))
             }
             context.stroke(path, with: .color(AppTheme.accent.opacity(0.055)), lineWidth: 1)
         }
