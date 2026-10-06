@@ -115,7 +115,7 @@ struct ContentView: View {
 
     private var profileHeader: some View {
         HStack(spacing: 12) {
-            Text("N")
+            Text("H")
                 .font(.system(size: 28, weight: .medium, design: .serif))
                 .foregroundStyle(.white)
                 .frame(width: 48, height: 50)
@@ -123,7 +123,7 @@ struct ContentView: View {
                 .overlay(RoundedRectangle(cornerRadius: 9).stroke(MockPalette.border, lineWidth: 1))
 
             VStack(alignment: .leading, spacing: 3) {
-                Text("Niger Cheat")
+                Text("HIBLACK CHEAT")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(.white)
                 Text("FFXC  /  PRIVATE EDITION")
