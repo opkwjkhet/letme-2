@@ -2,7 +2,6 @@ import SwiftUI
 import UIKit
 import AVFoundation
 
-// MARK: - Delta Palette (matches reference screenshots)
 private enum DeltaPalette {
     static let bg            = Color(red: 0.925, green: 0.929, blue: 0.953)   // #ECEEF4
     static let card          = Color.white
@@ -21,7 +20,7 @@ private enum DeltaPalette {
     static let cardShadow    = Color.black.opacity(0.06)
 }
 
-// MARK: - Tab enum
+
 private enum DeltaTab: Int, CaseIterable {
     case dashboard, aimbot, visual, misc, settings
 
@@ -46,7 +45,7 @@ private enum DeltaTab: Int, CaseIterable {
     }
 }
 
-// MARK: - ContentView
+
 struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var appState: AppState
@@ -65,10 +64,10 @@ struct ContentView: View {
     @State private var aimChestPackageEnabled = false
     @State private var magicEnabled           = false
 
-    // UI state — Dashboard
+    
     @State private var antiBanEngine  = false
 
-    // UI state — Aimbot
+    
     @State private var launchAntiBan  = false
     @State private var aimbot         = true
     @State private var aimbotVector   = false
@@ -78,7 +77,7 @@ struct ContentView: View {
     @State private var aimbotDistance = 150.0
     @State private var ignoreKnocked  = false
 
-    // UI state — Visual
+    
     @State private var espMaster      = false
     @State private var espLine        = false
     @State private var espBox         = false
@@ -92,7 +91,7 @@ struct ContentView: View {
     @State private var textSize       = 1.0
     @State private var thicknessSize  = 1.0
 
-    // UI state — Misc
+    
     @State private var noRecoil       = false
     @State private var noReload       = false
     @State private var speedHacks     = false
@@ -101,17 +100,17 @@ struct ContentView: View {
     @State private var rapidFire      = false
     @State private var rapidValue     = 1.0
 
-    // UI state — Settings
+    
     @State private var streamProof    = false
     @State private var langIndex      = 0       // 0=English 1=Tiếng Việt
 
-    // tab
+    
     @State private var activeTab: DeltaTab = .dashboard
     @State private var showDemoAlert = false
 
-    // ── Image URLs — replace these strings with your actual hosted image URLs ──
-    private let deltaLogoURL  = "https://s.imgz.io/2026/10/10/IMG_481141f73b63c65bc6ce.jpeg"   // IMG_4811 (Delta Client logo)
-    private let gameIconURL   = "https://s.imgz.io/2026/10/10/IMG_48137513a57131b2da1e.jpeg"      // IMG_4813 (Free Fire MAX icon)
+
+    private let deltaLogoURL  = "https://s.imgz.io/2026/10/10/IMG_481141f73b63c65bc6ce.jpeg"   
+    private let gameIconURL   = "https://s.imgz.io/2026/10/10/IMG_48137513a57131b2da1e.jpeg"      
 
     var body: some View {
         ZStack {
@@ -135,25 +134,25 @@ struct ContentView: View {
             syncPatchStates()
             patchMessage = "READY — SELECT A PATCH"
         }
-        .alert("Demo UI only", isPresented: $showDemoAlert) {
+        .alert("ASSS", isPresented: $showDemoAlert) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("This is a visual mockup. It does not modify, inject into, or interact with Free Fire.")
+            Text(" I M L A Z Y")
         }
     }
 
-    // MARK: Top Header
+    
     private var topHeader: some View {
         HStack(spacing: 12) {
 
-            // ── App Logo (Delta Client image, falls back to gradient tile) ──
+    
             AsyncImage(url: URL(string: deltaLogoURL)) { phase in
                 if let img = phase.image {
                     img.resizable().scaledToFill()
                         .frame(width: 72, height: 72)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                 } else {
-                    // Fallback — styled to match the screenshot's purple gradient tile
+       
                     RoundedRectangle(cornerRadius: 14)
                         .fill(
                             LinearGradient(
@@ -176,7 +175,7 @@ struct ContentView: View {
                 }
             }
 
-            // ── App name: DELTA (bold dark) / CLIENT (bold dark), two lines ──
+         
             VStack(alignment: .leading, spacing: -2) {
                 Text("DELTA")
                     .font(.system(size: 26, weight: .heavy))
@@ -188,7 +187,7 @@ struct ContentView: View {
 
             Spacer()
 
-            // ── FF pill (two stacked F letters, outlined circle) ──
+ 
             VStack(spacing: -4) {
                 Text("F")
                     .font(.system(size: 14, weight: .semibold))
@@ -199,7 +198,7 @@ struct ContentView: View {
             .frame(width: 44, height: 44)
             .overlay(Circle().stroke(DeltaPalette.border, lineWidth: 1.5))
 
-            // ── MAX pill (filled purple circle) ──
+        
             VStack(spacing: -4) {
                 Text("M")
                     .font(.system(size: 13, weight: .black))
@@ -225,7 +224,7 @@ struct ContentView: View {
         .background(DeltaPalette.bg)
     }
 
-    // MARK: Tab content router
+
     @ViewBuilder
     private var tabContent: some View {
         ScrollView(showsIndicators: false) {
@@ -244,10 +243,10 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - DASHBOARD PAGE
+
     private var dashboardPage: some View {
         VStack(spacing: 14) {
-            // Welcome banner
+        
             HStack(spacing: 10) {
                 Image(systemName: "sparkles")
                     .foregroundStyle(DeltaPalette.purple)
@@ -259,11 +258,11 @@ struct ContentView: View {
             .padding(.horizontal, 16).padding(.vertical, 14)
             .background(DeltaPalette.purpleBg, in: RoundedRectangle(cornerRadius: 16))
 
-            // Injected Target Game
+
             DeltaCard {
                 DeltaSectionHeader(icon: "gamecontroller.fill", title: "INJECTED TARGET GAME")
                 HStack(spacing: 12) {
-                    // Game icon — Free Fire MAX
+        
                     AsyncImage(url: URL(string: gameIconURL)) { phase in
                         if let img = phase.image {
                             img.resizable().scaledToFill()
@@ -299,11 +298,11 @@ struct ContentView: View {
                 .padding(.horizontal, 16).padding(.bottom, 16)
             }
 
-            // Security & Anti-Ban
+          
             DeltaCard {
                 DeltaSectionHeader(icon: "shield.fill", title: "SECURITY & ANTI-BAN")
                 DeltaToggleRow(label: "Anti-Ban Engine", subtitle: "Standing By", isOn: $antiBanEngine)
-                // Anti-Ban Log
+           
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
                         Text("ANTI-BAN LOG")
@@ -338,16 +337,16 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - AIMBOT PAGE
+    
     private var aimbotPage: some View {
         VStack(spacing: 14) {
-            // Anti-Ban
+           
             DeltaCard {
                 DeltaSectionHeader(icon: "shield.fill", title: "ANTI-BAN")
                 DeltaToggleRow(label: "Launch Anti-Ban", isOn: $launchAntiBan)
             }
 
-            // Aimbot Type
+          
             DeltaCard {
                 DeltaSectionHeader(icon: "scope", title: "AIMBOT TYPE")
                 DeltaToggleRow(label: "Aimbot", isOn: $aimbot)
@@ -359,7 +358,7 @@ struct ContentView: View {
                 DeltaSegmentRow(label: "Bone:", options: ["Head", "Neck", "Body"], selection: $boneIndex)
             }
 
-            // Aimbot Settings
+     
             DeltaCard {
                 DeltaSectionHeader(icon: "slider.horizontal.3", title: "AIMBOT SETTINGS")
                 DeltaToggleRow(label: "Draw Field Of View", showColorRing: true, isOn: .constant(false))
@@ -373,10 +372,10 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - VISUAL PAGE
+    
     private var visualPage: some View {
         VStack(spacing: 14) {
-            // ESP Main
+        
             DeltaCard {
                 DeltaSectionHeader(icon: "eye.fill", title: "ESP MAIN")
                 DeltaToggleRow(label: "ESP Master", isOn: $espMaster)
@@ -400,7 +399,7 @@ struct ContentView: View {
                 DeltaToggleRow(label: "Draw Count Enemies", showColorRing: true, isOn: $drawCountEnemies)
             }
 
-            // Visual Sliders
+     
             DeltaCard {
                 DeltaSectionHeader(icon: "rectangle.3.group.fill", title: "VISUAL SLIDERS")
                 DeltaSliderRow(label: "Text Size",      value: $textSize,      range: 0.1...3.0, unit: "",  formatInt: false)
@@ -410,7 +409,7 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - MISC PAGE
+  
     private var miscPage: some View {
         DeltaCard {
             DeltaSectionHeader(icon: "bolt.fill", title: "MISC FEATURES")
@@ -430,16 +429,16 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - SETTINGS PAGE
+    
     private var settingsPage: some View {
         VStack(spacing: 14) {
-            // Privacy
+     
             DeltaCard {
                 DeltaSectionHeader(icon: "video.slash.fill", title: "PRIVACY")
                 DeltaToggleRow(label: "Stream Proof", isOn: $streamProof)
             }
 
-            // License Info
+        
             DeltaCard {
                 DeltaSectionHeader(icon: "key.fill", title: "LICENSE INFORMATION")
                 DeltaInfoRow(label: "License:", value: "DELTA", bold: true)
@@ -464,7 +463,7 @@ struct ContentView: View {
                     .padding(.horizontal, 16).padding(.bottom, 14)
             }
 
-            // System Compatibility
+            
             DeltaCard {
                 DeltaSectionHeader(icon: "apple.logo", title: "SYSTEM COMPATIBILITY")
                 HStack(alignment: .top) {
@@ -490,13 +489,13 @@ struct ContentView: View {
                 .padding(.horizontal, 16).padding(.bottom, 16)
             }
 
-            // Language
+          
             DeltaCard {
                 DeltaSectionHeader(icon: "globe", title: "LANGUAGE")
                 DeltaSegmentRow(label: nil, options: ["English", "Tiếng Việt"], selection: $langIndex)
             }
 
-            // Support & System
+         
             DeltaCard {
                 DeltaSectionHeader(icon: "questionmark.circle.fill", title: "SUPPORT & SYSTEM")
                 HStack(spacing: 10) {
@@ -526,7 +525,7 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Bottom Tab Bar
+
     private var deltaTabBar: some View {
         HStack(spacing: 0) {
             ForEach(DeltaTab.allCases, id: \.rawValue) { tab in
@@ -562,7 +561,7 @@ struct ContentView: View {
         }
     }
 
-    // MARK: - Patch logic (unchanged from original)
+  )
     private func syncPatchStates() {
         aimDragEnabled         = isPatchActive("OGIOS File (6).3105")
         aimNeckEnabled         = isPatchActive("OGIOS File (7).3105")
@@ -665,7 +664,7 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Reusable Delta Components
+
 
 private struct DeltaCard<Content: View>: View {
     @ViewBuilder let content: Content
