@@ -2,74 +2,126 @@ import SwiftUI
 import UIKit
 import AVFoundation
 
-/// Visual-only recreation of the supplied reference screen.
-/// Controls update local demo state only; nothing here modifies or launches a game.
+// MARK: - Delta Palette (matches reference screenshots)
+private enum DeltaPalette {
+    static let bg            = Color(red: 0.925, green: 0.929, blue: 0.953)   // #ECEEF4
+    static let card          = Color.white
+    static let purple        = Color(red: 0.482, green: 0.184, blue: 0.933)   // #7B2FBE
+    static let purplePill    = Color(red: 0.486, green: 0.231, blue: 0.929)   // #7C3AED
+    static let purpleBg      = Color(red: 0.941, green: 0.922, blue: 1.0)     // #F0EBFF
+    static let textPrimary   = Color(red: 0.102, green: 0.102, blue: 0.180)   // #1A1A2E
+    static let textSecondary = Color(red: 0.420, green: 0.447, blue: 0.502)   // #6B7280
+    static let textGray      = Color(red: 0.612, green: 0.639, blue: 0.667)   // #9CA3AF
+    static let toggleOff     = Color(red: 0.820, green: 0.835, blue: 0.855)   // #D1D5DB
+    static let border        = Color(red: 0.898, green: 0.910, blue: 0.922)   // #E5E7EB
+    static let green         = Color(red: 0.063, green: 0.725, blue: 0.506)   // #10B981
+    static let red           = Color(red: 0.937, green: 0.267, blue: 0.267)   // #EF4444
+    static let logBg         = Color(red: 0.110, green: 0.110, blue: 0.118)   // #1C1C1E
+    static let segBg         = Color(red: 0.922, green: 0.922, blue: 0.929)   // #EBEBED
+    static let cardShadow    = Color.black.opacity(0.06)
+}
+
+// MARK: - Tab enum
+private enum DeltaTab: Int, CaseIterable {
+    case dashboard, aimbot, visual, misc, settings
+
+    var label: String {
+        switch self {
+        case .dashboard: return "Dashboard"
+        case .aimbot:    return "Aimbot"
+        case .visual:    return "Visual"
+        case .misc:      return "Misc"
+        case .settings:  return "Settings"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .dashboard: return "house.fill"
+        case .aimbot:    return "scope"
+        case .visual:    return "eye"
+        case .misc:      return "bolt.fill"
+        case .settings:  return "gearshape.fill"
+        }
+    }
+}
+
+// MARK: - ContentView
 struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var appState: AppState
     @State private var showSettings = false
-    @State private var showCleaner = false
+    @State private var showCleaner  = false
     @StateObject private var patchStore = PatchProjectStore()
     @State private var patchOperationBusy = false
     @State private var patchMessage = "READY — SELECT A PATCH"
-    @State private var aimDragEnabled = false
-    @State private var aimNeckEnabled = false
-    @State private var hspeitoffEnabled = false
+
+    // patch state
+    @State private var aimDragEnabled        = false
+    @State private var aimNeckEnabled        = false
+    @State private var hspeitoffEnabled      = false
     @State private var hyperBalamagicaEnabled = false
-    @State private var aimBodyPackageEnabled = false
+    @State private var aimBodyPackageEnabled  = false
     @State private var aimChestPackageEnabled = false
-    @State private var magicEnabled = false
+    @State private var magicEnabled           = false
 
-    @State private var selectedTab = 0
-    @State private var selectedGame = 0
+    // UI state — Dashboard
+    @State private var antiBanEngine  = false
 
-    @State private var aimSilent = true
-    @State private var aimBot = false
-    @State private var aimLine = true
-    @State private var boxESP = true
-    @State private var boneESP = true
-    @State private var espCount = true
-    @State private var weaponESP = false
-    @State private var espColor = true
-    @State private var fastMedikit = true
-    @State private var fastFire = true
+    // UI state — Aimbot
+    @State private var launchAntiBan  = false
+    @State private var aimbot         = true
+    @State private var aimbotVector   = false
+    @State private var aimSilent      = false
+    @State private var boneIndex      = 0       // 0=Head 1=Neck 2=Body
+    @State private var fieldOfView    = 120.0
+    @State private var aimbotDistance = 150.0
+    @State private var ignoreKnocked  = false
 
-    @State private var silentFOV = 100.0
-    @State private var headshot = 73.0
-    @State private var lineThickness = 1.0
-    @State private var fireLevel = 4
-    @State private var selectedColor = "White"
+    // UI state — Visual
+    @State private var espMaster      = false
+    @State private var espLine        = false
+    @State private var espBox         = false
+    @State private var boxTypeIndex   = 0       // 0=Cornered 1=2D Bounding
+    @State private var espName        = false
+    @State private var espDistance    = false
+    @State private var espHealth      = false
+    @State private var healthTypeIdx  = 0       // 0=Right 1=Left
+    @State private var espSkeleton    = false
+    @State private var drawCountEnemies = false
+    @State private var textSize       = 1.0
+    @State private var thicknessSize  = 1.0
+
+    // UI state — Misc
+    @State private var noRecoil       = false
+    @State private var noReload       = false
+    @State private var speedHacks     = false
+    @State private var speedValue     = 1.0
+    @State private var fastMedkit     = false
+    @State private var rapidFire      = false
+    @State private var rapidValue     = 1.0
+
+    // UI state — Settings
+    @State private var streamProof    = false
+    @State private var langIndex      = 0       // 0=English 1=Tiếng Việt
+
+    // tab
+    @State private var activeTab: DeltaTab = .dashboard
     @State private var showDemoAlert = false
 
     var body: some View {
         ZStack {
-            MockBackdrop()
+            DeltaPalette.bg.ignoresSafeArea()
 
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 17) {
-                    menuTabs
-                    profileHeader
-                    licenseCard
-                    gamePicker
-                    aimingSection
-                    espSection
-                    combatSection
-                }
-                .padding(.horizontal, 22)
-                .padding(.top, 8)
-                .padding(.bottom, 22)
+            VStack(spacing: 0) {
+                topHeader
+                tabContent
+                deltaTabBar
             }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            bottomBar
-        }
-        .preferredColorScheme(.dark)
-        .sheet(isPresented: $showSettings) {
-            SettingsView()
-        }
-        .sheet(isPresented: $showCleaner) {
-            CleanerView()
-        }
+        .preferredColorScheme(.light)
+        .sheet(isPresented: $showSettings) { SettingsView() }
+        .sheet(isPresented: $showCleaner)  { CleanerView()  }
         .sheet(item: $patchStore.passwordRequest, onDismiss: patchStore.cancelUnlock) { _ in
             PatchUnlockPrompt(store: patchStore)
         }
@@ -86,415 +138,397 @@ struct ContentView: View {
         }
     }
 
-    private var menuTabs: some View {
-        HStack(spacing: 0) {
-            tabButton("Menu", index: 0)
-            tabButton("Log", index: 1)
-        }
-        .padding(3)
-        .frame(height: 36)
-        .background(MockPalette.tabTrack, in: RoundedRectangle(cornerRadius: 9))
-    }
+    // MARK: Top Header
+    private var topHeader: some View {
+        HStack(spacing: 10) {
+            // Logo — replace AsyncImage url with real asset as needed
+            RoundedRectangle(cornerRadius: 10)
+                .fill(
+                    LinearGradient(
+                        colors: [Color(red:0.10,green:0.02,blue:0.20),
+                                 Color(red:0.29,green:0.10,blue:0.48),
+                                 DeltaPalette.purplePill],
+                        startPoint: .topLeading, endPoint: .bottomTrailing)
+                )
+                .frame(width: 44, height: 44)
+                .overlay(
+                    Text("DELTA\nCLIENT")
+                        .font(.system(size: 8, weight: .black))
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                )
 
-    private func tabButton(_ title: String, index: Int) -> some View {
-        Button {
-            selectedTab = index
-        } label: {
-            Text(title)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.white.opacity(selectedTab == index ? 0.96 : 0.78))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background {
-                    if selectedTab == index {
-                        RoundedRectangle(cornerRadius: 7).fill(MockPalette.selectedTab)
-                    }
-                }
-        }
-        .buttonStyle(.plain)
-    }
+            Text("DELTA CLIENT")
+                .font(.system(size: 20, weight: .heavy))
+                .foregroundStyle(DeltaPalette.textPrimary)
 
-    private var profileHeader: some View {
-        HStack(spacing: 12) {
-            Text("H")
-                .font(.system(size: 28, weight: .medium, design: .serif))
-                .foregroundStyle(.white)
-                .frame(width: 48, height: 50)
-                .background(.black.opacity(0.72), in: RoundedRectangle(cornerRadius: 9))
-                .overlay(RoundedRectangle(cornerRadius: 9).stroke(MockPalette.border, lineWidth: 1))
+            Spacer()
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text("HIBLACK CHEAT")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                Text("FFXC  /  PRIVATE EDITION")
-                    .font(.system(size: 9, weight: .medium, design: .monospaced))
-                    .tracking(1.1)
-                    .foregroundStyle(.white.opacity(0.62))
-                HStack(spacing: 6) {
-                    Circle().fill(Color(red: 0.72, green: 0.86, blue: 0.73)).frame(width: 7, height: 7)
-                    Text("Free Fire")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.66))
-                }
-                .padding(.top, 5)
-            }
-
-            Spacer(minLength: 4)
-
-            Button {
-                showSettings = true
-            } label: {
-                Image(systemName: "rectangle.portrait.and.arrow.right")
-                    .font(.system(size: 19, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.78))
-                    .frame(width: 48, height: 48)
-                    .background(MockPalette.card, in: RoundedRectangle(cornerRadius: 10))
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.top, 2)
-    }
-
-    private var licenseCard: some View {
-        VStack(spacing: 12) {
-            HStack(alignment: .top) {
-                Text("Mona-*****-ics")
-                    .font(.system(size: 16, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.9))
-                Spacer()
-                VStack(alignment: .trailing, spacing: 3) {
-                    Text("Expires In")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.46))
-                    Text("365d  3h  50m")
-                        .font(.system(size: 15, weight: .medium, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.9))
-                }
-            }
-
-            HStack {
-                Image(systemName: "iphone")
-                    .font(.system(size: 14, weight: .regular))
-                Text("iPhone 18 Pro Max")
-                    .font(.system(size: 13, weight: .medium))
-                Spacer()
-                Image(systemName: "apple.logo")
+            // FF / MAX pills
+            HStack(spacing: 6) {
+                Text("FF")
                     .font(.system(size: 13, weight: .semibold))
-                Text("26.5")
-                    .font(.system(size: 13, weight: .medium, design: .monospaced))
-            }
-            .foregroundStyle(.white.opacity(0.57))
-        }
-        .padding(.horizontal, 15)
-        .padding(.vertical, 14)
-        .frame(maxWidth: .infinity)
-        .background(MockPalette.card, in: RoundedRectangle(cornerRadius: 13))
-        .overlay(RoundedRectangle(cornerRadius: 13).stroke(MockPalette.border, lineWidth: 1))
-    }
+                    .foregroundStyle(DeltaPalette.textPrimary)
+                    .padding(.horizontal, 14).padding(.vertical, 6)
+                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(DeltaPalette.border, lineWidth: 1.5))
 
-    private var gamePicker: some View {
-        HStack(spacing: 4) {
-            gameButton("Free Fire", index: 0)
-            gameButton("Free Fire MAX", index: 1)
-        }
-        .padding(4)
-        .frame(height: 62)
-        .background(MockPalette.card, in: RoundedRectangle(cornerRadius: 13))
-        .overlay(RoundedRectangle(cornerRadius: 13).stroke(MockPalette.border, lineWidth: 1))
-    }
+                Text("MAX")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 14).padding(.vertical, 6)
+                    .background(DeltaPalette.purplePill, in: RoundedRectangle(cornerRadius: 20))
 
-    private func gameButton(_ title: String, index: Int) -> some View {
-        Button {
-            selectedGame = index
-        } label: {
-            Text(title)
-                .font(.system(size: 15, weight: selectedGame == index ? .bold : .medium))
-                .foregroundStyle(selectedGame == index ? MockPalette.ink : .white.opacity(0.7))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background {
-                    if selectedGame == index {
-                        RoundedRectangle(cornerRadius: 9).fill(MockPalette.cream)
-                    }
+                // Eye button
+                Button { showDemoAlert = true } label: {
+                    Image(systemName: "eye.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(DeltaPalette.purple)
+                        .frame(width: 38, height: 38)
+                        .background(DeltaPalette.purpleBg, in: Circle())
                 }
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var aimingSection: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            sectionLabel("AIMING")
-            VStack(spacing: 0) {
-                FeatureToggleRow(
-                    symbol: "wind",
-                    title: "Aim Silent",
-                    subtitle: "Silent aim with headshot rate and FOV",
-                    isOn: $aimSilent
-                )
-
-                Divider().overlay(MockPalette.divider)
-                    .padding(.leading, 64)
-
-                DemoSliderRow(title: "Silent FOV", value: $silentFOV, range: 0...100, suffix: "")
-
-                Divider().overlay(MockPalette.divider)
-                    .padding(.leading, 64)
-
-                DemoSliderRow(title: "Headshot", value: $headshot, range: 0...100, suffix: "%")
-
-                Divider().overlay(MockPalette.divider)
-                    .padding(.leading, 64)
-
-                FeatureToggleRow(
-                    symbol: "scope",
-                    title: "Aim Bot",
-                    subtitle: "Head or neck aim with FOV mode",
-                    isOn: $aimBot
-                )
-
-                Divider().overlay(MockPalette.divider)
-                    .padding(.leading, 64)
-
-                FeatureToggleRow(
-                    symbol: "line.diagonal",
-                    title: "Aim Line",
-                    subtitle: "Line from crosshair to selected target",
-                    isOn: $aimLine
-                )
+                .buttonStyle(.plain)
             }
-            .background(MockPalette.card, in: RoundedRectangle(cornerRadius: 15))
-            .overlay(RoundedRectangle(cornerRadius: 15).stroke(MockPalette.border, lineWidth: 1))
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(DeltaPalette.bg)
+    }
+
+    // MARK: Tab content router
+    @ViewBuilder
+    private var tabContent: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 14) {
+                switch activeTab {
+                case .dashboard: dashboardPage
+                case .aimbot:    aimbotPage
+                case .visual:    visualPage
+                case .misc:      miscPage
+                case .settings:  settingsPage
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
+            .padding(.bottom, 20)
         }
     }
 
-    private var espSection: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            sectionLabel("ESP")
-            VStack(spacing: 0) {
-                FeatureToggleRow(
-                    symbol: "viewfinder.dashed",
-                    title: "Box ESP",
-                    subtitle: "Enemy bounding box",
-                    isOn: $boxESP
-                )
+    // MARK: - DASHBOARD PAGE
+    private var dashboardPage: some View {
+        VStack(spacing: 14) {
+            // Welcome banner
+            HStack(spacing: 10) {
+                Image(systemName: "sparkles")
+                    .foregroundStyle(DeltaPalette.purple)
+                Text("Welcome DELTA back! Have a good day.")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(DeltaPalette.textPrimary)
+                Spacer()
+            }
+            .padding(.horizontal, 16).padding(.vertical, 14)
+            .background(DeltaPalette.purpleBg, in: RoundedRectangle(cornerRadius: 16))
 
-                Divider().overlay(MockPalette.divider)
-                    .padding(.leading, 64)
+            // Injected Target Game
+            DeltaCard {
+                DeltaSectionHeader(icon: "gamecontroller.fill", title: "INJECTED TARGET GAME")
+                HStack(spacing: 12) {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(LinearGradient(colors: [.orange, .red], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .frame(width: 54, height: 54)
+                        .overlay(Text("FF\nMAX").font(.system(size: 8, weight: .black)).foregroundStyle(.white).multilineTextAlignment(.center))
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Free Fire MAX")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundStyle(DeltaPalette.textPrimary)
+                        Text("com.dts.freefiremax")
+                            .font(.system(size: 11, weight: .regular).monospaced())
+                            .foregroundStyle(DeltaPalette.textSecondary)
+                    }
+                    Spacer()
+                    HStack(spacing: 5) {
+                        Circle().fill(DeltaPalette.green).frame(width: 7, height: 7)
+                        Text("ACTIVE")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(DeltaPalette.green)
+                    }
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(DeltaPalette.green, lineWidth: 1.5))
+                }
+                .padding(.horizontal, 16).padding(.bottom, 16)
+            }
 
-                FeatureToggleRow(
-                    symbol: "point.3.connected.trianglepath.dotted",
-                    title: "Bone ESP",
-                    subtitle: "Bone-line overlay",
-                    isOn: $boneESP
-                )
-
-                Divider().overlay(MockPalette.divider)
-                    .padding(.leading, 64)
-
-                FeatureToggleRow(
-                    symbol: "number",
-                    title: "ESP Count",
-                    subtitle: "Visible player count",
-                    isOn: $espCount
-                )
-
-                Divider().overlay(MockPalette.divider)
-                    .padding(.leading, 64)
-
-                FeatureToggleRow(
-                    symbol: "scope",
-                    title: "Weapon ESP",
-                    subtitle: "Weapon name above enemy box",
-                    isOn: $weaponESP
-                )
-
-                Divider().overlay(MockPalette.divider)
-                    .padding(.leading, 64)
-
-                FeatureToggleRow(
-                    symbol: "paintpalette",
-                    title: "ESP Color",
-                    subtitle: "Select ESP overlay color",
-                    isOn: $espColor
-                )
-
-                Divider().overlay(MockPalette.divider)
-                    .padding(.leading, 64)
-
-                VStack(alignment: .leading, spacing: 8) {
+            // Security & Anti-Ban
+            DeltaCard {
+                DeltaSectionHeader(icon: "shield.fill", title: "SECURITY & ANTI-BAN")
+                DeltaToggleRow(label: "Anti-Ban Engine", subtitle: "Standing By", isOn: $antiBanEngine)
+                // Anti-Ban Log
+                VStack(alignment: .leading, spacing: 6) {
                     HStack {
-                        Text("ESP Color")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.7))
+                        Text("ANTI-BAN LOG")
+                            .font(.system(size: 12, weight: .bold))
+                            .tracking(0.8)
+                            .foregroundStyle(DeltaPalette.purple)
                         Spacer()
-                        Circle().fill(.white).frame(width: 14, height: 14)
-                        Text(selectedColor)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.8))
+                        Image(systemName: "arrow.clockwise")
+                            .foregroundStyle(DeltaPalette.purple)
                     }
-
-                    Picker("ESP Color", selection: $selectedColor) {
-                        Text("White").tag("White")
-                        Text("Red").tag("Red")
-                        Text("Green").tag("Green")
-                    }
-                    .pickerStyle(.menu)
-                    .tint(.white.opacity(0.82))
-                    .labelsHidden()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                    HStack(spacing: 9) {
-                        Text("Line (thickness) px")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.66))
-                            .fixedSize()
-                        Slider(value: $lineThickness, in: 0...1)
-                            .tint(MockPalette.cream)
-                    }
+                    Text("No log yet. Open the game so the patch runs.")
+                        .font(.system(size: 12).monospaced())
+                        .foregroundStyle(DeltaPalette.textGray)
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(DeltaPalette.logBg, in: RoundedRectangle(cornerRadius: 10))
                 }
-                .padding(.horizontal, 15)
-                .padding(.vertical, 14)
+                .padding(.horizontal, 16).padding(.bottom, 16)
             }
-            .background(MockPalette.card, in: RoundedRectangle(cornerRadius: 15))
-            .overlay(RoundedRectangle(cornerRadius: 15).stroke(MockPalette.border, lineWidth: 1))
+
+            // System Overview
+            DeltaCard {
+                DeltaSectionHeader(icon: "chart.bar.fill", title: "SYSTEM OVERVIEW")
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                    DeltaOverviewItem(icon: "cpu", value: "v3.1.5",    label: "Delta Engine")
+                    DeltaOverviewItem(icon: "memorychip", value: "RW Active",  label: "Memory Hook")
+                    DeltaOverviewItem(icon: "shield",     value: "Standby",    label: "Anti-Ban Mode")
+                    DeltaOverviewItem(icon: "key.fill",   value: "Lifetime",   label: "License")
+                }
+                .padding(.horizontal, 12).padding(.bottom, 14)
+            }
         }
     }
 
-    private var combatSection: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            sectionLabel("COMBAT")
-            VStack(spacing: 0) {
-                FeatureToggleRow(
-                    symbol: "cross.case",
-                    title: "Fast Medikit",
-                    subtitle: "Reduce medikit use time",
-                    isOn: $fastMedikit
-                )
+    // MARK: - AIMBOT PAGE
+    private var aimbotPage: some View {
+        VStack(spacing: 14) {
+            // Anti-Ban
+            DeltaCard {
+                DeltaSectionHeader(icon: "shield.fill", title: "ANTI-BAN")
+                DeltaToggleRow(label: "Launch Anti-Ban", isOn: $launchAntiBan)
+            }
 
-                Divider().overlay(MockPalette.divider)
-                    .padding(.leading, 64)
+            // Aimbot Type
+            DeltaCard {
+                DeltaSectionHeader(icon: "scope", title: "AIMBOT TYPE")
+                DeltaToggleRow(label: "Aimbot", isOn: $aimbot)
+                DeltaDivider()
+                DeltaToggleRow(label: "Aimbot Vector", isOn: $aimbotVector)
+                DeltaDivider()
+                DeltaToggleRow(label: "Aim Silent", isOn: $aimSilent)
+                DeltaDivider()
+                DeltaSegmentRow(label: "Bone:", options: ["Head", "Neck", "Body"], selection: $boneIndex)
+            }
 
-                FeatureToggleRow(
-                    symbol: "bolt.fill",
-                    title: "Fast Fire",
-                    subtitle: "Increase fire rate",
-                    isOn: $fastFire
-                )
+            // Aimbot Settings
+            DeltaCard {
+                DeltaSectionHeader(icon: "slider.horizontal.3", title: "AIMBOT SETTINGS")
+                DeltaToggleRow(label: "Draw Field Of View", showColorRing: true, isOn: .constant(false))
+                DeltaDivider()
+                DeltaSliderRow(label: "Field Of View",    value: $fieldOfView,    range: 0...360,  unit: "",  formatInt: true)
+                DeltaDivider()
+                DeltaSliderRow(label: "Aimbot Distance",  value: $aimbotDistance, range: 0...500,  unit: "m", formatInt: true)
+                DeltaDivider()
+                DeltaToggleRow(label: "Ignore Knocked", isOn: $ignoreKnocked)
+            }
+        }
+    }
 
-                Divider().overlay(MockPalette.divider)
-                    .padding(.leading, 15)
+    // MARK: - VISUAL PAGE
+    private var visualPage: some View {
+        VStack(spacing: 14) {
+            // ESP Main
+            DeltaCard {
+                DeltaSectionHeader(icon: "eye.fill", title: "ESP MAIN")
+                DeltaToggleRow(label: "ESP Master", isOn: $espMaster)
+                DeltaDivider()
+                DeltaToggleRow(label: "ESP Line",     showColorRing: true, isOn: $espLine)
+                DeltaDivider()
+                DeltaToggleRow(label: "ESP Box",      showColorRing: true, isOn: $espBox)
+                DeltaDivider()
+                DeltaSegmentRow(label: "Box Type:", options: ["Cornered", "2D Bounding"], selection: $boxTypeIndex)
+                DeltaDivider()
+                DeltaToggleRow(label: "ESP Name",     showColorRing: true, isOn: $espName)
+                DeltaDivider()
+                DeltaToggleRow(label: "ESP Distance", showColorRing: true, isOn: $espDistance)
+                DeltaDivider()
+                DeltaToggleRow(label: "ESP Health", isOn: $espHealth)
+                DeltaDivider()
+                DeltaSegmentRow(label: "Health Type:", options: ["Right", "Left"], selection: $healthTypeIdx)
+                DeltaDivider()
+                DeltaToggleRow(label: "ESP Skeleton",      showColorRing: true, isOn: $espSkeleton)
+                DeltaDivider()
+                DeltaToggleRow(label: "Draw Count Enemies", showColorRing: true, isOn: $drawCountEnemies)
+            }
 
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Fast Fire")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.white.opacity(0.68))
+            // Visual Sliders
+            DeltaCard {
+                DeltaSectionHeader(icon: "rectangle.3.group.fill", title: "VISUAL SLIDERS")
+                DeltaSliderRow(label: "Text Size",      value: $textSize,      range: 0.1...3.0, unit: "",  formatInt: false)
+                DeltaDivider()
+                DeltaSliderRow(label: "Thickness Size", value: $thicknessSize, range: 0.1...3.0, unit: "",  formatInt: false)
+            }
+        }
+    }
 
-                    HStack(spacing: 1) {
-                        ForEach(1...4, id: \.self) { level in
-                            Button {
-                                fireLevel = level
-                            } label: {
-                                Text("Lv\(level)")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundStyle(.white.opacity(fireLevel == level ? 0.94 : 0.75))
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 34)
-                                    .background {
-                                        if fireLevel == level {
-                                            RoundedRectangle(cornerRadius: 7).fill(MockPalette.selectedTab)
-                                        }
-                                    }
+    // MARK: - MISC PAGE
+    private var miscPage: some View {
+        DeltaCard {
+            DeltaSectionHeader(icon: "bolt.fill", title: "MISC FEATURES")
+            DeltaToggleRow(label: "No Recoil", isOn: $noRecoil)
+            DeltaDivider()
+            DeltaToggleRow(label: "No Reload", isOn: $noReload)
+            DeltaDivider()
+            DeltaToggleRow(label: "Speed Hacks", isOn: $speedHacks)
+            DeltaDivider()
+            DeltaSliderRow(label: "Speed",  value: $speedValue,  range: 0.1...5.0, unit: "x", formatInt: false)
+            DeltaDivider()
+            DeltaToggleRow(label: "Fast Medkit", isOn: $fastMedkit)
+            DeltaDivider()
+            DeltaToggleRow(label: "Rapid Fire", isOn: $rapidFire)
+            DeltaDivider()
+            DeltaSliderRow(label: "Rapid", value: $rapidValue, range: 0.1...5.0, unit: "x", formatInt: false)
+        }
+    }
+
+    // MARK: - SETTINGS PAGE
+    private var settingsPage: some View {
+        VStack(spacing: 14) {
+            // Privacy
+            DeltaCard {
+                DeltaSectionHeader(icon: "video.slash.fill", title: "PRIVACY")
+                DeltaToggleRow(label: "Stream Proof", isOn: $streamProof)
+            }
+
+            // License Info
+            DeltaCard {
+                DeltaSectionHeader(icon: "key.fill", title: "LICENSE INFORMATION")
+                DeltaInfoRow(label: "License:", value: "DELTA", bold: true)
+                DeltaDivider()
+                DeltaInfoRow(label: "Expired:", value: "Lifetime", bold: true)
+                DeltaDivider()
+                HStack {
+                    Text("UUID:")
+                        .font(.system(size: 15))
+                        .foregroundStyle(DeltaPalette.textSecondary)
+                    Spacer()
+                    Button("Copy") {}
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 18).padding(.vertical, 6)
+                        .background(DeltaPalette.purplePill, in: RoundedRectangle(cornerRadius: 20))
+                }
+                .padding(.horizontal, 16).padding(.vertical, 14)
+                Text("IV-D33D9E41-0DCE-4CE8-8F01-BA0DA98001AD")
+                    .font(.system(size: 11).monospaced())
+                    .foregroundStyle(DeltaPalette.textSecondary)
+                    .padding(.horizontal, 16).padding(.bottom, 14)
+            }
+
+            // System Compatibility
+            DeltaCard {
+                DeltaSectionHeader(icon: "apple.logo", title: "SYSTEM COMPATIBILITY")
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Current iOS Version:")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(DeltaPalette.textPrimary)
+                        Text("iOS 27.0.0 (24A435)")
+                            .font(.system(size: 13))
+                            .foregroundStyle(DeltaPalette.textSecondary)
+                    }
+                    Spacer()
+                    HStack(spacing: 5) {
+                        Circle().fill(DeltaPalette.red).frame(width: 7, height: 7)
+                        Text("UNSUPPORTED")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(DeltaPalette.red)
+                    }
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .background(Color(red:1,green:0.94,blue:0.94), in: RoundedRectangle(cornerRadius: 20))
+                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color(red:1,green:0.82,blue:0.82), lineWidth: 1.5))
+                }
+                .padding(.horizontal, 16).padding(.bottom, 16)
+            }
+
+            // Language
+            DeltaCard {
+                DeltaSectionHeader(icon: "globe", title: "LANGUAGE")
+                DeltaSegmentRow(label: nil, options: ["English", "Tiếng Việt"], selection: $langIndex)
+            }
+
+            // Support & System
+            DeltaCard {
+                DeltaSectionHeader(icon: "questionmark.circle.fill", title: "SUPPORT & SYSTEM")
+                HStack(spacing: 10) {
+                    Image(systemName: "bubble.left.and.bubble.right.fill")
+                        .font(.system(size: 20))
+                        .foregroundStyle(DeltaPalette.purple)
+                    Text("Discord Support")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(DeltaPalette.textPrimary)
+                    Spacer()
+                    Image(systemName: "arrow.up.right")
+                        .foregroundStyle(DeltaPalette.purple)
+                }
+                .padding(.horizontal, 16).padding(.vertical, 14)
+                Divider().padding(.horizontal, 16)
+                HStack(spacing: 10) {
+                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                        .font(.system(size: 20))
+                        .foregroundStyle(DeltaPalette.red)
+                    Text("Sign Out")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(DeltaPalette.red)
+                    Spacer()
+                }
+                .padding(.horizontal, 16).padding(.vertical, 14)
+            }
+        }
+    }
+
+    // MARK: - Bottom Tab Bar
+    private var deltaTabBar: some View {
+        HStack(spacing: 0) {
+            ForEach(DeltaTab.allCases, id: \.rawValue) { tab in
+                Button {
+                    activeTab = tab
+                } label: {
+                    VStack(spacing: 4) {
+                        ZStack {
+                            if activeTab == tab {
+                                RoundedRectangle(cornerRadius: 17)
+                                    .fill(DeltaPalette.purpleBg)
+                                    .frame(width: 52, height: 34)
                             }
-                            .buttonStyle(.plain)
-                            if level < 4 {
-                                Rectangle().fill(MockPalette.divider).frame(width: 1, height: 22)
-                            }
+                            Image(systemName: tab.icon)
+                                .font(.system(size: 22))
+                                .foregroundStyle(activeTab == tab ? DeltaPalette.purple : DeltaPalette.textGray)
                         }
+                        Text(tab.label)
+                            .font(.system(size: 11, weight: activeTab == tab ? .semibold : .regular))
+                            .foregroundStyle(activeTab == tab ? DeltaPalette.purple : DeltaPalette.textGray)
                     }
-                    .padding(3)
-                    .background(MockPalette.tabTrack, in: RoundedRectangle(cornerRadius: 9))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 4)
                 }
-                .padding(.horizontal, 15)
-                .padding(.vertical, 13)
+                .buttonStyle(.plain)
             }
-            .background(MockPalette.card, in: RoundedRectangle(cornerRadius: 15))
-            .overlay(RoundedRectangle(cornerRadius: 15).stroke(MockPalette.border, lineWidth: 1))
         }
-    }
-
-    private var bottomBar: some View {
-        HStack(spacing: 12) {
-            Button {
-                showDemoAlert = true
-            } label: {
-                Label {
-                    Text("Inject Cheat")
-                        .font(.system(size: 17, weight: .bold))
-                } icon: {
-                    Image(systemName: "arrow.down.circle.fill")
-                        .font(.system(size: 18, weight: .bold))
-                }
-                .foregroundStyle(MockPalette.ink)
-                .frame(maxWidth: .infinity)
-                .frame(height: 60)
-                .background(MockPalette.cream, in: RoundedRectangle(cornerRadius: 11))
-            }
-            .buttonStyle(.plain)
-
-            Button(action: resetDemoControls) {
-                Image(systemName: "arrow.counterclockwise")
-                    .font(.system(size: 23, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.75))
-                    .frame(width: 60, height: 60)
-                    .background(MockPalette.card, in: RoundedRectangle(cornerRadius: 11))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Reset demo controls")
-        }
-        .padding(.horizontal, 22)
-        .padding(.top, 11)
-        .padding(.bottom, 8)
-        .background(.ultraThinMaterial)
+        .padding(.top, 8)
+        .padding(.bottom, 20)
+        .background(Color.white)
         .overlay(alignment: .top) {
-            Rectangle().fill(.white.opacity(0.08)).frame(height: 1)
+            Rectangle().fill(DeltaPalette.border).frame(height: 1)
         }
     }
 
-    private func sectionLabel(_ title: String) -> some View {
-        Text(title)
-            .font(.system(size: 12, weight: .medium))
-            .foregroundStyle(.white.opacity(0.45))
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 4)
-    }
-
-    private func resetDemoControls() {
-        aimSilent = true
-        aimBot = false
-        aimLine = true
-        boxESP = true
-        boneESP = true
-        espCount = true
-        weaponESP = false
-        espColor = true
-        fastMedikit = true
-        fastFire = true
-        silentFOV = 100
-        headshot = 73
-        lineThickness = 1
-        fireLevel = 4
-        selectedColor = "White"
-    }
-
-    // Keep the original package-patching flow intact; the screenshot controls above
-    // are visual placeholders and intentionally do not trigger these operations.
+    // MARK: - Patch logic (unchanged from original)
     private func syncPatchStates() {
-        aimDragEnabled = isPatchActive("OGIOS File (6).3105")
-        aimNeckEnabled = isPatchActive("OGIOS File (7).3105")
-        hspeitoffEnabled = isPatchActive("OGIOS File (8).3105")
+        aimDragEnabled         = isPatchActive("OGIOS File (6).3105")
+        aimNeckEnabled         = isPatchActive("OGIOS File (7).3105")
+        hspeitoffEnabled       = isPatchActive("OGIOS File (8).3105")
         hyperBalamagicaEnabled = isPatchActive("OGIOS File (10).3105")
-        aimBodyPackageEnabled = isPatchActive("OGIOS File (12).3105")
+        aimBodyPackageEnabled  = isPatchActive("OGIOS File (12).3105")
         aimChestPackageEnabled = isPatchActive("OGIOS File (2).3105")
-        magicEnabled = isPatchActive("OGIOS File (14).3105")
+        magicEnabled           = isPatchActive("OGIOS File (14).3105")
     }
 
     private func isPatchActive(_ packageFilename: String) -> Bool {
@@ -504,20 +538,16 @@ struct ContentView: View {
         .flatMap { DevicePatchService.latestReceipt(projectID: $0.id) } != nil
     }
 
-    private enum PatchActionResult {
-        case applied
-        case restored
-        case unavailable(String)
-    }
+    private enum PatchActionResult { case applied, restored, unavailable(String) }
 
     private func setPatchState(for packageFilename: String, enabled: Bool) {
         switch packageFilename {
-        case "OGIOS File (6).3105": aimDragEnabled = enabled
-        case "OGIOS File (7).3105": aimNeckEnabled = enabled
-        case "OGIOS File (8).3105": hspeitoffEnabled = enabled
+        case "OGIOS File (6).3105":  aimDragEnabled = enabled
+        case "OGIOS File (7).3105":  aimNeckEnabled = enabled
+        case "OGIOS File (8).3105":  hspeitoffEnabled = enabled
         case "OGIOS File (10).3105": hyperBalamagicaEnabled = enabled
         case "OGIOS File (12).3105": aimBodyPackageEnabled = enabled
-        case "OGIOS File (2).3105": aimChestPackageEnabled = enabled
+        case "OGIOS File (2).3105":  aimChestPackageEnabled = enabled
         case "OGIOS File (14).3105": magicEnabled = enabled
         default: break
         }
@@ -532,7 +562,6 @@ struct ContentView: View {
             log("patch: package not found: \(packageFilename)")
             return
         }
-
         let wasEnabled = state.wrappedValue
         patchOperationBusy = true
         patchMessage = "PROCESSING — \(packageFilename)"
@@ -568,7 +597,6 @@ struct ContentView: View {
             } catch {
                 result = .unavailable("FAILED — \(String(describing: error))")
             }
-
             DispatchQueue.main.async {
                 switch result {
                 case .applied:
@@ -595,154 +623,199 @@ struct ContentView: View {
     }
 }
 
-private struct FeatureToggleRow: View {
-    let symbol: String
+// MARK: - Reusable Delta Components
+
+private struct DeltaCard<Content: View>: View {
+    @ViewBuilder let content: Content
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) { content }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(DeltaPalette.card, in: RoundedRectangle(cornerRadius: 16))
+            .shadow(color: DeltaPalette.cardShadow, radius: 8, y: 2)
+    }
+}
+
+private struct DeltaSectionHeader: View {
+    let icon: String
     let title: String
-    let subtitle: String
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(DeltaPalette.purple)
+            Text(title)
+                .font(.system(size: 12, weight: .bold))
+                .tracking(0.8)
+                .foregroundStyle(DeltaPalette.purple)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 14)
+        .padding(.bottom, 12)
+    }
+}
+
+private struct DeltaToggleRow: View {
+    let label: String
+    var subtitle: String? = nil
+    var showColorRing: Bool = false
     @Binding var isOn: Bool
 
     var body: some View {
-        HStack(spacing: 13) {
-            Image(systemName: symbol)
-                .font(.system(size: 20, weight: .medium))
-                .foregroundStyle(isOn ? MockPalette.ink : .white.opacity(0.75))
-                .frame(width: 50, height: 50)
-                .background(isOn ? MockPalette.cream : MockPalette.iconOff, in: RoundedRectangle(cornerRadius: 9))
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title)
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.94))
-                Text(subtitle)
-                    .font(.system(size: 12, weight: .regular))
-                    .foregroundStyle(.white.opacity(0.56))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .foregroundStyle(DeltaPalette.textPrimary)
+                if let sub = subtitle {
+                    Text(sub)
+                        .font(.system(size: 13))
+                        .foregroundStyle(DeltaPalette.textSecondary)
+                }
             }
-
-            Spacer(minLength: 2)
-
-            Toggle(title, isOn: $isOn)
+            Spacer()
+            if showColorRing {
+                Circle()
+                    .strokeBorder(
+                        AngularGradient(colors: [.red,.yellow,.green,.cyan,.blue,.purple,.red],
+                                        center: .center),
+                        lineWidth: 2.5
+                    )
+                    .frame(width: 28, height: 28)
+                    .padding(.trailing, 8)
+            }
+            Toggle("", isOn: $isOn)
                 .labelsHidden()
-                .tint(MockPalette.cream)
-                .scaleEffect(0.88, anchor: .trailing)
-                .frame(width: 54)
+                .tint(DeltaPalette.purplePill)
         }
-        .padding(.horizontal, 13)
-        .padding(.vertical, 14)
-        .contentShape(Rectangle())
+        .padding(.horizontal, 16)
+        .padding(.vertical, 13)
     }
 }
 
-private struct DemoSliderRow: View {
-    let title: String
+private struct DeltaSliderRow: View {
+    let label: String
     @Binding var value: Double
     let range: ClosedRange<Double>
-    let suffix: String
+    let unit: String
+    let formatInt: Bool
+
+    private var displayValue: String {
+        formatInt ? "\(Int(value))\(unit)" : String(format: "%.1f\(unit)", value)
+    }
 
     var body: some View {
-        VStack(spacing: 9) {
+        VStack(spacing: 8) {
             HStack {
-                Text(title)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.68))
+                Text(label)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(DeltaPalette.textPrimary)
                 Spacer()
-                Text("\(Int(value))\(suffix)")
-                    .font(.system(size: 14, weight: .medium, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.86))
+                Text(displayValue)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(DeltaPalette.purple)
             }
             Slider(value: $value, in: range)
-                .tint(MockPalette.cream)
+                .tint(DeltaPalette.purplePill)
         }
-        .padding(.horizontal, 17)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 13)
     }
 }
 
-private struct MockBackdrop: View {
-    var body: some View {
-        ZStack {
-            Color.black
-            GeometryReader { proxy in
-                Canvas { context, size in
-                    var path = Path()
-                    path.move(to: CGPoint(x: size.width * 0.68, y: 0))
-                    path.addLine(to: CGPoint(x: size.width * 0.28, y: size.height))
-                    path.move(to: CGPoint(x: size.width * 0.98, y: 0))
-                    path.addLine(to: CGPoint(x: size.width * 0.58, y: size.height))
-                    context.stroke(path, with: .color(.white.opacity(0.025)), lineWidth: 1)
-                }
-                .frame(width: proxy.size.width, height: proxy.size.height)
-            }
-        }
-        .ignoresSafeArea()
-    }
-}
-
-private enum MockPalette {
-    static let cream = Color(red: 0.93, green: 0.92, blue: 0.86)
-    static let ink = Color(red: 0.08, green: 0.08, blue: 0.08)
-    static let card = Color(red: 0.065, green: 0.065, blue: 0.07)
-    static let border = Color(red: 0.20, green: 0.20, blue: 0.21)
-    static let divider = Color(red: 0.14, green: 0.14, blue: 0.15)
-    static let iconOff = Color(red: 0.12, green: 0.12, blue: 0.13)
-    static let tabTrack = Color(red: 0.105, green: 0.105, blue: 0.115)
-    static let selectedTab = Color(red: 0.30, green: 0.30, blue: 0.32)
-}
-
-private struct PatchOptionCard: View {
-    let name: String
-    let target: String
-    let color: Color
-    @Binding var isEnabled: Bool
-    let isBusy: Bool
-    let action: () -> Void
+private struct DeltaSegmentRow: View {
+    let label: String?
+    let options: [String]
+    @Binding var selection: Int
 
     var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 11) {
-                HStack {
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 16, weight: .black))
-                        .foregroundStyle(color)
-                    Spacer()
-                    Text(isEnabled ? "ON" : "OFF")
-                        .font(.system(size: 11, weight: .black, design: .rounded))
-                        .foregroundStyle(isEnabled ? .green : .white.opacity(0.58))
-                }
-                Text(name)
-                    .font(.system(size: 17, weight: .black, design: .rounded))
-                    .foregroundStyle(.white)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.78)
-                Text(target)
-                    .font(.system(size: 10, weight: .black, design: .rounded))
-                    .tracking(1.3)
-                    .foregroundStyle(color)
-                HStack(spacing: 7) {
-                    Circle().fill(isEnabled ? Color.green : Color.white.opacity(0.25)).frame(width: 8, height: 8)
-                    Text(isEnabled ? "PATCH ACTIVE" : "ACTIVATE PATCH")
-                        .font(.system(size: 9, weight: .black, design: .rounded))
-                        .tracking(0.8)
-                        .foregroundStyle(.white.opacity(0.65))
+        VStack(alignment: .leading, spacing: 8) {
+            if let label {
+                Text(label)
+                    .font(.system(size: 13))
+                    .foregroundStyle(DeltaPalette.textGray)
+            }
+            HStack(spacing: 0) {
+                ForEach(options.indices, id: \.self) { idx in
+                    Button {
+                        selection = idx
+                    } label: {
+                        Text(options[idx])
+                            .font(.system(size: 14, weight: selection == idx ? .semibold : .regular))
+                            .foregroundStyle(DeltaPalette.textPrimary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                            .background {
+                                if selection == idx {
+                                    RoundedRectangle(cornerRadius: 7)
+                                        .fill(Color.white)
+                                        .shadow(color: .black.opacity(0.12), radius: 3, y: 1)
+                                }
+                            }
+                    }
+                    .buttonStyle(.plain)
                 }
             }
-            .frame(maxWidth: .infinity, minHeight: 142, alignment: .leading)
-            .padding(14)
-            .background(Color.black.opacity(0.52), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(isEnabled ? color.opacity(0.85) : color.opacity(0.28), lineWidth: isEnabled ? 1.5 : 1))
-            .shadow(color: isEnabled ? color.opacity(0.20) : .clear, radius: 12)
+            .padding(3)
+            .background(DeltaPalette.segBg, in: RoundedRectangle(cornerRadius: 9))
         }
-        .buttonStyle(.plain)
-        .disabled(isBusy)
-        .opacity(isBusy ? 0.55 : 1)
-        .accessibilityLabel("\(name), \(target), \(isEnabled ? "On" : "Off")")
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
     }
 }
+
+private struct DeltaInfoRow: View {
+    let label: String
+    let value: String
+    var bold: Bool = false
+    var body: some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 15))
+                .foregroundStyle(DeltaPalette.textSecondary)
+            Spacer()
+            Text(value)
+                .font(.system(size: 15, weight: bold ? .bold : .regular))
+                .foregroundStyle(DeltaPalette.textPrimary)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 14)
+    }
+}
+
+private struct DeltaOverviewItem: View {
+    let icon: String
+    let value: String
+    let label: String
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 18))
+                .foregroundStyle(DeltaPalette.purple)
+            Text(value)
+                .font(.system(size: 17, weight: .bold))
+                .foregroundStyle(DeltaPalette.textPrimary)
+            Text(label)
+                .font(.system(size: 12))
+                .foregroundStyle(DeltaPalette.textSecondary)
+        }
+        .padding(13)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(DeltaPalette.border, lineWidth: 1.5))
+    }
+}
+
+private struct DeltaDivider: View {
+    var body: some View {
+        Divider()
+            .background(DeltaPalette.border)
+            .padding(.horizontal, 16)
+    }
+}
+
+// MARK: - Unchanged supporting types
 
 private struct PatchAudioFeedback {
     private static let synthesizer = AVSpeechSynthesizer()
-    static func bypassActivated() { speak("Bypass ativado") }
+    static func bypassActivated()  { speak("Bypass ativado") }
     static func originalRestored() { speak("Bypass desativado") }
 
     private static func speak(_ message: String) {
@@ -753,7 +826,8 @@ private struct PatchAudioFeedback {
         let utterance = AVSpeechUtterance(string: message)
         let voices = AVSpeechSynthesisVoice.speechVoices()
         utterance.voice = voices.first(where: {
-            ($0.language.hasPrefix("pt-BR") || $0.language.hasPrefix("pt-PT") || $0.language.hasPrefix("pt")) && $0.gender == .female && $0.quality == .enhanced
+            ($0.language.hasPrefix("pt-BR") || $0.language.hasPrefix("pt-PT") || $0.language.hasPrefix("pt"))
+                && $0.gender == .female && $0.quality == .enhanced
         }) ?? voices.first(where: {
             $0.language.hasPrefix("pt-BR") || $0.language.hasPrefix("pt-PT") || $0.language.hasPrefix("pt")
         }) ?? AVSpeechSynthesisVoice(language: "pt-BR")
@@ -790,12 +864,9 @@ private struct PatchUnlockPrompt: View {
             .navigationTitle("Unlock package")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Unlock", action: unlock)
-                        .disabled(password.isEmpty || store.isBusy)
+                    Button("Unlock", action: unlock).disabled(password.isEmpty || store.isBusy)
                 }
             }
         }
@@ -809,7 +880,6 @@ private struct PatchUnlockPrompt: View {
 
 struct AnimatedHyperBackdrop: View {
     @State private var animate = false
-
     var body: some View {
         GeometryReader { proxy in
             ZStack {
@@ -827,9 +897,7 @@ struct AnimatedHyperBackdrop: View {
                 GridOverlay()
             }
             .onAppear {
-                withAnimation(.easeInOut(duration: 7).repeatForever(autoreverses: true)) {
-                    animate = true
-                }
+                withAnimation(.easeInOut(duration: 7).repeatForever(autoreverses: true)) { animate = true }
             }
         }
     }
@@ -840,13 +908,11 @@ private struct GridOverlay: View {
         Canvas { context, size in
             var path = Path()
             let spacing: CGFloat = 44
-            stride(from: CGFloat(0), through: size.width, by: spacing).forEach { x in
-                path.move(to: CGPoint(x: x, y: 0))
-                path.addLine(to: CGPoint(x: x, y: size.height))
+            stride(from: CGFloat(0), through: size.width,  by: spacing).forEach { x in
+                path.move(to: CGPoint(x: x, y: 0)); path.addLine(to: CGPoint(x: x, y: size.height))
             }
             stride(from: CGFloat(0), through: size.height, by: spacing).forEach { y in
-                path.move(to: CGPoint(x: 0, y: y))
-                path.addLine(to: CGPoint(x: size.width, y: y))
+                path.move(to: CGPoint(x: 0, y: y)); path.addLine(to: CGPoint(x: size.width, y: y))
             }
             context.stroke(path, with: .color(AppTheme.accent.opacity(0.055)), lineWidth: 1)
         }
