@@ -109,6 +109,10 @@ struct ContentView: View {
     @State private var activeTab: DeltaTab = .dashboard
     @State private var showDemoAlert = false
 
+    // ── Image URLs — replace these strings with your actual hosted image URLs ──
+    private let deltaLogoURL  = "https://s.imgz.io/2026/10/10/IMG_481141f73b63c65bc6ce.jpeg"   // IMG_4811 (Delta Client logo)
+    private let gameIconURL   = "https://s.imgz.io/2026/10/10/IMG_48137513a57131b2da1e.jpeg"      // IMG_4813 (Free Fire MAX icon)
+
     var body: some View {
         ZStack {
             DeltaPalette.bg.ignoresSafeArea()
@@ -140,57 +144,84 @@ struct ContentView: View {
 
     // MARK: Top Header
     private var topHeader: some View {
-        HStack(spacing: 10) {
-            // Logo — replace AsyncImage url with real asset as needed
-            RoundedRectangle(cornerRadius: 10)
-                .fill(
-                    LinearGradient(
-                        colors: [Color(red:0.10,green:0.02,blue:0.20),
-                                 Color(red:0.29,green:0.10,blue:0.48),
-                                 DeltaPalette.purplePill],
-                        startPoint: .topLeading, endPoint: .bottomTrailing)
-                )
-                .frame(width: 44, height: 44)
-                .overlay(
-                    Text("DELTA\nCLIENT")
-                        .font(.system(size: 8, weight: .black))
-                        .foregroundStyle(.white)
-                        .multilineTextAlignment(.center)
-                )
+        HStack(spacing: 12) {
 
-            Text("DELTA CLIENT")
-                .font(.system(size: 20, weight: .heavy))
-                .foregroundStyle(DeltaPalette.textPrimary)
+            // ── App Logo (Delta Client image, falls back to gradient tile) ──
+            AsyncImage(url: URL(string: deltaLogoURL)) { phase in
+                if let img = phase.image {
+                    img.resizable().scaledToFill()
+                        .frame(width: 72, height: 72)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                } else {
+                    // Fallback — styled to match the screenshot's purple gradient tile
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color(red:0.08,green:0.01,blue:0.16),
+                                         Color(red:0.26,green:0.08,blue:0.45),
+                                         Color(red:0.48,green:0.18,blue:0.80)],
+                                startPoint: .topLeading, endPoint: .bottomTrailing)
+                        )
+                        .frame(width: 72, height: 72)
+                        .overlay(
+                            VStack(spacing: 0) {
+                                Text("DELTA")
+                                    .font(.system(size: 13, weight: .black))
+                                    .foregroundStyle(.white)
+                                Text("CLIENT")
+                                    .font(.system(size: 13, weight: .black))
+                                    .foregroundStyle(DeltaPalette.purple.opacity(0.85))
+                            }
+                        )
+                }
+            }
+
+            // ── App name: DELTA (bold dark) / CLIENT (bold dark), two lines ──
+            VStack(alignment: .leading, spacing: -2) {
+                Text("DELTA")
+                    .font(.system(size: 26, weight: .heavy))
+                    .foregroundStyle(DeltaPalette.textPrimary)
+                Text("CLIENT")
+                    .font(.system(size: 26, weight: .heavy))
+                    .foregroundStyle(DeltaPalette.textPrimary)
+            }
 
             Spacer()
 
-            // FF / MAX pills
-            HStack(spacing: 6) {
-                Text("FF")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(DeltaPalette.textPrimary)
-                    .padding(.horizontal, 14).padding(.vertical, 6)
-                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(DeltaPalette.border, lineWidth: 1.5))
-
-                Text("MAX")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 14).padding(.vertical, 6)
-                    .background(DeltaPalette.purplePill, in: RoundedRectangle(cornerRadius: 20))
-
-                // Eye button
-                Button { showDemoAlert = true } label: {
-                    Image(systemName: "eye.fill")
-                        .font(.system(size: 16))
-                        .foregroundStyle(DeltaPalette.purple)
-                        .frame(width: 38, height: 38)
-                        .background(DeltaPalette.purpleBg, in: Circle())
-                }
-                .buttonStyle(.plain)
+            // ── FF pill (two stacked F letters, outlined circle) ──
+            VStack(spacing: -4) {
+                Text("F")
+                    .font(.system(size: 14, weight: .semibold))
+                Text("F")
+                    .font(.system(size: 14, weight: .semibold))
             }
+            .foregroundStyle(DeltaPalette.textPrimary)
+            .frame(width: 44, height: 44)
+            .overlay(Circle().stroke(DeltaPalette.border, lineWidth: 1.5))
+
+            // ── MAX pill (filled purple circle) ──
+            VStack(spacing: -4) {
+                Text("M")
+                    .font(.system(size: 13, weight: .black))
+                Text("AX")
+                    .font(.system(size: 13, weight: .black))
+            }
+            .foregroundStyle(.white)
+            .frame(width: 54, height: 54)
+            .background(DeltaPalette.purplePill, in: Circle())
+
+            // ── Eye button ──
+            Button { showDemoAlert = true } label: {
+                Image(systemName: "eye.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(DeltaPalette.purple)
+                    .frame(width: 44, height: 44)
+                    .background(DeltaPalette.purpleBg, in: Circle())
+            }
+            .buttonStyle(.plain)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
         .background(DeltaPalette.bg)
     }
 
@@ -232,10 +263,21 @@ struct ContentView: View {
             DeltaCard {
                 DeltaSectionHeader(icon: "gamecontroller.fill", title: "INJECTED TARGET GAME")
                 HStack(spacing: 12) {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(LinearGradient(colors: [.orange, .red], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 54, height: 54)
-                        .overlay(Text("FF\nMAX").font(.system(size: 8, weight: .black)).foregroundStyle(.white).multilineTextAlignment(.center))
+                    // Game icon — Free Fire MAX
+                    AsyncImage(url: URL(string: gameIconURL)) { phase in
+                        if let img = phase.image {
+                            img.resizable().scaledToFill()
+                                .frame(width: 54, height: 54)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        } else {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(LinearGradient(colors: [.orange, .red],
+                                                     startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .frame(width: 54, height: 54)
+                                .overlay(Text("FF\nMAX").font(.system(size: 8, weight: .black))
+                                    .foregroundStyle(.white).multilineTextAlignment(.center))
+                        }
+                    }
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Free Fire MAX")
                             .font(.system(size: 17, weight: .bold))
